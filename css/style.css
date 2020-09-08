@@ -16,12 +16,24 @@ a:link {
     text-decoration:none;
 }
 
+section {
+    margin-top: 30px;
+}
+
 /* nav bar */
 nav.navbar {
     background-color: #2d4059;
 }
 .navbar-brand i {
     font-size: 1.6em;
+}
+
+.form-inline input {
+    background-color: #e5e5e5;
+}
+
+.form-inline button:hover {
+    background-color: #e5e5e5;
 }
 
 #actors {
@@ -31,13 +43,34 @@ nav.navbar {
 .genres {
     margin: 0 4px;
     padding: 6px;
-    background-color: #decdc3;
+    background-color: #ea5455;
+}
+
+.genres a {
+    color: #e5e5e5;
+}
+
+.genres a:hover {
+    color: #decdc3;
 }
 
 .dropdown a.dropdown-item {
     cursor: pointer;
 }
-
+#movie-keywords ul a {
+    color: #e5e5e5;
+}
+#movie-keywords ul a:hover {
+    color: #decdc3;
+}
+#movie-keywords ul li {
+    list-style: none;
+    display: inline-block;
+    margin: 0 4px;
+    padding: 6px;
+    background-color: #ea5455;
+    color: #e5e5e5;
+}
 /* Movie Cards */
 .card {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
@@ -46,7 +79,7 @@ nav.navbar {
     border: 1px solid rgba(var(--lightGrey), 1);
     padding-bottom: 10px;
     border-radius: var(--imageBorderRadius);
-    min-height: calc(208px * 1.5);
+    /* min-height: calc(208px * 1.5); */
 }
 
 .card h5 {
@@ -67,19 +100,25 @@ nav.navbar {
     cursor: pointer;
 }
 
-/* Movie Cards */
-/* .movie-information-card{
-   
-} */
+#movie-tagline {
+    margin-bottom: 1em;
+    font-size: 1.1em;
+    font-weight: 400;
+    font-style: italic;
+    opacity: 0.7;
+}
 
 .movie-content{
-    padding: 50px;
+    padding-left: 50px;
 }
 
 .movie-content h2,p{
   margin-bottom: 20px;
 }
 
+#movie-detail {
+    margin: 35px 0;
+}
 iframe{
     margin: 50px 0;
     border-radius: 15px;
@@ -87,7 +126,7 @@ iframe{
 
 #movie-backdrop{
     border-radius: 15px;
-
+}
 .card-body {
     position: relative;
 }
@@ -100,6 +139,20 @@ iframe{
     box-sizing: border-box;
     display: inline-block;
     font-size: 0.5em;
+}
+
+#movie-detail .pie_progress {
+    width: 90px;
+    height: 90px;
+    box-sizing: border-box;
+    display: inline-block;
+    font-size: 0.5em;
+}
+
+#movie-rating span {
+    font-size: 32px;
+    font-weight: normal;
+    line-height: 24px;
 }
 
 .movie-category h3 {
@@ -175,13 +228,17 @@ ol.people li p.character {
     width: 150px;
 }
 .no_image_holder {
-    width: 150px;
+    width: 100%;
     height: 225px;
     background-color: #dbdbdb;
     background-image: url('https://www.themoviedb.org/assets/2/v4/glyphicons/basic/glyphicons-basic-4-user-grey-d8fe957375e70239d6abdd549fd7568c89281b2179b5f4470e2e12895792dfa5.svg');
     background-position: center center;
     background-repeat: no-repeat;
     background-size: 50%;
+}
+.actor.no_image_holder {
+    width: 253px;
+    height: 100%;
 }
 
 #movie-backdrop {
@@ -200,8 +257,8 @@ ol.people li p.character {
     text-align: center;
 }
 
-section {
-    padding: 50px 0;
+.full_wrapper {
+    padding: 50px 0 10px;
 }
 
 section .section-title {

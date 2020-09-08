@@ -11,6 +11,12 @@ class App {
             HomePage.renderMovies(movies);
         });
 
+        document.querySelector('#popular-people').addEventListener('click', async () => {
+            const people = await APIService.fetchPopularPeople()
+            HomePage.renderSearchedActors(people);
+            Events.bindPersonListener();
+        });
+
         document.querySelectorAll("[data-genre-id]").forEach(elem => {
             elem.addEventListener('click', function (e) {
                 let element = e.target.dataset.genreId ? e.target : e.target.parentNode;
@@ -103,10 +109,18 @@ class APIService {
         const url = APIService._constructUrlSeacrh(`search/movie`, `&query=${movieName}`)
         const response = await fetch(url)
         const data = await response.json()
-        console.log(data)
         return data.results.map(result => new Movie(result))
 
     }
+
+    static async fetchPopularPeople() {
+        const url = APIService._constructUrl(`person/popular`)
+        const response = await fetch(url)
+        const data = await response.json()
+        return data.results
+
+    }
+
     //  https://api.themoviedb.org/3/search/movie?api_key=542003918769df50083a13c415bbc602&query=power
 
     static async fetchSearchedActors(actorName) {
@@ -147,7 +161,7 @@ class HomePage {
             const content = `
                 <div class="col-sm-3 d-flex align-items-stretch">
                     <div class="card">        
-                        <img src="${movie.backdropUrl}" class="card-img-top" alt="${movie.title}" data-movie-id="${movie.id}">
+                        <img src="${movie.posterUrl}" class="card-img-top" alt="${movie.title}" data-movie-id="${movie.id}">
                         <div class="card-body">
                             <div class="pie_progress" role="progressbar" data-goal="${movie.voteAverage * 10}">
                                 <div class="pie_progress__number">0%</div>
@@ -216,38 +230,27 @@ class HomePage {
 
     static renderSearchedActors(actors) {
         this.container.innerHTML = "";
+        const actorsDiv = document.createElement("div");
+        actorsDiv.className = "row";
         actors.forEach(actor => {
-            const actorDiv = document.createElement("div");
-            actorDiv.className = "row";
 
-            const actorImgDiv = document.createElement("div");
-            actorImgDiv.className = "col-lg-4";
-
-            const actorImage = document.createElement("img");
-            actorImage.src = Movie.BACKDROP_BASE_URL + actor.profile_path;
-            actorImage.className = "card-img-top";
-
-            const actorInfoDiv = document.createElement("div");
-            actorInfoDiv.className = "col-lg-8";
-
-            const actorName = document.createElement("h3");
-            actorName.textContent = `${actor.name}`;
-
-            actorImgDiv.addEventListener("click", function () {
-                People.run(actor.id)
-            });
-
-            actorName.addEventListener("click", function () {
-                People.run(actor.id)
-            });
-
-            actorImgDiv.appendChild(actorImage);
-            actorInfoDiv.appendChild(actorName);
-
-            actorDiv.appendChild(actorImgDiv);
-            actorDiv.appendChild(actorInfoDiv);
-            this.container.appendChild(actorDiv);
+            actorsDiv.innerHTML += `
+                <div class="col-sm-3 d-flex align-items-stretch">
+                    <div class="card">
+                    ${!actor.profile_path ?
+                        `<img class="actor no_image_holder" href="#" data-actor-id="${actor.id}">` :
+                        `<img src="${Movie.BACKDROP_BASE_URL + actor.profile_path}" class="card-img-top" alt="${actor.name}" data-actor-id="${actor.id}">`}
+            
+                        
+                        <div class="card-body">
+                            <h5 class="card-title" data-actor-id="${actor.id}">${actor.name}</h5>
+                            <p class="card-text mute-text">${actor.known_for.length > 0 ? actor.known_for.reduce((total, movie) => total + movie.title + `, `, '') : ``}</p>
+                        </div>
+                    </div>
+                </div>
+            `
         })
+        this.container.appendChild(actorsDiv);
     }
 }
 
@@ -302,6 +305,7 @@ class Search {
     static async forPeople(actors) {
         const actorData = await APIService.fetchSearchedActors(actors)
         HomePage.renderSearchedActors(actorData);
+        Events.bindPersonListener();
     }
 
     static async forGenre(genreId) {
@@ -352,9 +356,10 @@ class Movies {
 
 class MoviePage {
     static container = document.getElementById('container');
-    
+
     static renderMovieSection(movie) {
         MovieSection.renderMovieDetail(movie);
+        updateVoteAverage()
 
         const genreElements = document.querySelectorAll("[data-genre-id]");
         genreElements.forEach(elem => {
@@ -409,24 +414,26 @@ class MovieSection {
         <section>
         <div id="movie-detail" class="row movie-information-card">
             <div class="col-md-4">
-            <img id="movie-backdrop" src=${movie.backdropUrl}> 
+            <img id="movie-backdrop" src=${movie.posterUrl}> 
             </div>
             <div class="col-md-8 movie-content">
             <h2 id="movie-title">${movie.title}</h2>
             <p id="genres">${MovieSection.renderGenres(movie.genres)}</p>
-            <p id="movie-release-date">${movie.releaseDate}</p>
-            
-            <p id="movie-lang">${movie.tagline}</p>
+            <p id="movie-release-date">${movie.releaseDate} | <span id="movie-runtime">${movie.runtime}</span></p>
+            <p id="movie-tagline">${movie.tagline}</p>
+            <h4>Overview</h4>
             <p id="movie-overview">${movie.overview}</p>
             <div class="row">
                 <div class="col-md-3 mt-5">
-                    <p id="movie-runtime">${movie.runtime}</p>
+                    <div class="pie_progress" role="progressbar" data-goal="${movie.voteAverage * 10}">
+                        <div class="pie_progress__number">0%</div>
+                    </div>
                 </div>
                 <div class="col-md-3 mt-5">
-                    <p id="movie-rating">${movie.voteAverage}/10</p>
+                    <p id="movie-rating"><span>${movie.voteAverage}</span>/10</p>
+                    <p id="movie-lang">${movie.voteCount} votes</p>
                 </div>
                 <div class="col-md-3 mt-5">
-                    <p id="movie-lang">${movie.voteCount}</p>
                 </div>
             </div>
             </div>
@@ -507,9 +514,9 @@ class MovieSection {
         div.id = "movie-similar";
 
         const template = (movie) => (`
-            <div class="col-3">
+            <div class="col-3 d-flex align-items-stretch">
             <div class="card">
-                <img id="movie-backdrop" src=${movie.backdropUrl}>
+                <img id="movie-backdrop" src=${movie.posterUrl}>
                 <div class="card-body"> 
                     <h3>${movie.title}</h3>
                     <p>${movie.voteAverage}</p>
@@ -621,12 +628,12 @@ class PersonSection {
                     <section class="full_wrapper">
                         <h3><bdi>Personal Info</bdi></h3>
                         <section>
-                            <p><strong><bdi>Known For</bdi></strong> ${person.knownForDepartment}</p>
-                            <p><strong><bdi>Gender</bdi></strong> ${person.gender}</p>
+                            <p><strong><bdi>Known For</bdi></strong><br> ${person.knownForDepartment}</p>
+                            <p><strong><bdi>Gender</bdi></strong><br> ${person.gender}</p>
                 
-                            <p class="full"><strong><bdi>Birthday</bdi></strong> ${person.birthday} (${person.yearsOld} years old)</p>
+                            <p class="full"><strong><bdi>Birthday</bdi></strong><br> ${person.birthday} (${person.yearsOld} years old)</p>
                 
-                            <p class="full"><strong><bdi>Place of Birth</bdi></strong> ${person.placeOfBirth}</p>
+                            <p class="full"><strong><bdi>Place of Birth</bdi></strong><br> ${person.placeOfBirth}</p>
                 
                             <p class="full false"><strong><bdi>Also Known As</bdi></strong></p>
                             <ul>
@@ -638,11 +645,9 @@ class PersonSection {
                 </div>
             </div>
             <div id='right-wrapper' class="col col-lg-8">
-                <section class="full-wrapper">
+                <section class="full_wrapper">
                     <h2 class="title">${person.name}</h2>
-                </section>
-                <section class="full-wrapper">
-                    <h3>Biography</h3>
+                    <h4>Biography</h4>
                     <div class="content"><p>${person.biography ? person.biography.replaceAll('\n\n', '</p><p>') : "We don't have a biography for Greg Kriek."}</p></div>
                 </section>
             </div>
@@ -674,7 +679,7 @@ class PersonSection {
         <h2>Known for</h2>
             <div class="cast-list">
                 <ol class="people scroller">
-                ${movies.reduce((total, movie) => total + template(movie), '')}
+                ${movies.reduce((total, movie) => { if (movie.poster_path) return total + template(movie) }, '')}
                 </ol>
             </div>
         </div>
@@ -723,7 +728,7 @@ class PersonSection {
                                         ${movies.reduce((total, movie) => {
             let td = `
                                                 <tr>
-                                                    <td class="year">${getYear(movie)}</td>
+                                                    <td class="year">${getYear(movie) ? getYear(movie) : `-`}</td>
                                                     <td class="seperator"></td>
                                                     <td class="role"><a href="#" data-movie-id="${movie.id}">${movie.media_type === 'movie' ? movie.title : movie.name}</a> <span class="group">${checkEpesodes(movie)} ${movie.character ? ` as <span class="character"> ${movie.character}` : ''}</span></span></td>
                                                 </tr>`
@@ -782,13 +787,24 @@ class Events {
         })
     }
 
+    static bindPersonListener() {
+        const personElements = document.querySelectorAll("[data-actor-id]");
+        console.log(personElements);
+        personElements.forEach(elem => {
+            elem.addEventListener('click', function (e) {
+                let element = e.target.dataset.actorId ? e.target : e.target.parentNode;
+                People.run(element.dataset.actorId);
+            })
+        })
+
+    }
+
     static bindMovieKeywordListener() {
         document.querySelectorAll("[data-keyword-id]").forEach(elem => {
             elem.addEventListener('click', async function (e) {
                 let element = e.target.dataset.keywordId ? e.target : e.target.parentNode;
 
                 const movies = await APIService.fetchKeyword(element.dataset.keywordId)
-                console.log(movies);
                 Search.renderMoviesSearchResult(movies);
                 const div = document.createElement('div');
                 div.className = "row"
@@ -813,13 +829,17 @@ class Movie {
         this.releaseDate = json.release_date;
         this.runtime = json.runtime + " minutes";
         this.overview = json.overview;
-        this.backdropPath = json.poster_path;
+        this.posterPath = json.poster_path;
+        this.backdropPath = json.backdrop_path;
         this.genres = json.genres;
         this.voteAverage = json.vote_average;
         this.voteCount = json.vote_count;
         this.spokenLanguages = json.spoken_languages;
     }
 
+    get posterUrl() {
+        return this.backdropPath ? Movie.BACKDROP_BASE_URL + this.posterPath : "";
+    }    
     get backdropUrl() {
         return this.backdropPath ? Movie.BACKDROP_BASE_URL + this.backdropPath : "";
     }
